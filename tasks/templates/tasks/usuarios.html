@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Administración de usuarios</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        header {
+            background: #1f2937;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        .contenedor {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .tarjeta {
+            background: white;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+
+        .campo {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            max-width: 400px;
+            padding: 9px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 5px;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        a {
+            color: white;
+            text-decoration: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #f3f4f6;
+        }
+
+        .error {
+            color: #b91c1c;
+            margin-bottom: 10px;
+        }
+
+        .rol {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+
+    <h1>Administración de usuarios</h1>
+
+    <div>
+        Usuario:
+        <strong>{{ request.user.username }}</strong>
+
+        &nbsp; | &nbsp;
+
+        <a href="{% url 'inicio' %}">
+            Volver al inicio
+        </a>
+    </div>
+
+</header>
+
+
+<div class="contenedor">
+
+    <!-- CREAR USUARIO -->
+
+    <div class="tarjeta">
+
+        <h2>Registrar usuario</h2>
+
+        <form
+            method="post"
+            action="{% url 'crear_usuario' %}"
+        >
+
+            {% csrf_token %}
+
+            {% if usuario_form.errors %}
+                <div class="error">
+                    {{ usuario_form.errors }}
+                </div>
+            {% endif %}
+
+            <div class="campo">
+
+                <label for="{{ usuario_form.username.id_for_label }}">
+                    Nombre de usuario
+                </label>
+
+                {{ usuario_form.username }}
+
+            </div>
+
+
+            <div class="campo">
+
+                <label for="{{ usuario_form.password.id_for_label }}">
+                    Contraseña
+                </label>
+
+                {{ usuario_form.password }}
+
+            </div>
+
+
+            <div class="campo">
+
+                <label for="{{ usuario_form.rol.id_for_label }}">
+                    Rol
+                </label>
+
+                {{ usuario_form.rol }}
+
+            </div>
+
+
+            <button type="submit">
+                Crear usuario
+            </button>
+
+        </form>
+
+    </div>
+
+
+    <!-- LISTADO DE USUARIOS -->
+
+    <div class="tarjeta">
+
+        <h2>Usuarios registrados</h2>
+
+        {% if usuarios %}
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for usuario in usuarios %}
+
+                        <tr>
+
+                            <td>
+                                {{ usuario.username }}
+                            </td>
+
+                            <td class="rol">
+
+                                {% for grupo in usuario.groups.all %}
+                                    {{ grupo.name }}
+                                {% empty %}
+                                    Sin rol
+                                {% endfor %}
+
+                            </td>
+
+                            <td>
+
+                                {% if usuario.is_active %}
+                                    Activo
+                                {% else %}
+                                    Inactivo
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        {% else %}
+
+            <p>No hay usuarios registrados.</p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

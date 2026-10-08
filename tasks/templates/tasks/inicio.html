@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Alertas y Paradas</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f6f8;
+            color: #222;
+        }
+
+        header {
+            background-color: #1f2937;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .usuario {
+            text-align: right;
+            font-size: 14px;
+        }
+
+        .contenedor {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .tarjeta {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .tarjeta h2 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+
+        .formulario {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .campo {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .campo label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: inherit;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            padding: 9px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #2563eb;
+            color: white;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-cancelar {
+            background-color: #dc2626;
+        }
+
+        .btn-cancelar:hover {
+            background-color: #b91c1c;
+        }
+
+        .btn-salir {
+            background-color: #6b7280;
+        }
+
+        .btn-salir:hover {
+            background-color: #4b5563;
+        }
+
+        .btn-usuarios {
+            display: inline-block;
+            margin-right: 8px;
+            padding: 8px 12px;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .btn-usuarios:hover {
+            background-color: #1d4ed8;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f3f4f6;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        .form-edicion {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .form-edicion input,
+        .form-edicion select {
+            max-width: 220px;
+        }
+
+        .estado-cancelada {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .estado-activa {
+            color: #15803d;
+            font-weight: bold;
+        }
+
+        .info-cancelacion {
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .sin-datos {
+            color: #666;
+            font-style: italic;
+        }
+
+        @media (max-width: 800px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .usuario {
+                text-align: left;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .formulario {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+
+    <div>
+        <h1>Sistema de Alertas y Paradas</h1>
+    </div>
+
+    <div class="usuario">
+
+        <div>
+            Usuario:
+            <strong>{{ request.user.username }}</strong>
+        </div>
+
+        {% if es_operario %}
+
+            <div>
+                Rol: Operario
+            </div>
+
+        {% elif es_supervisor %}
+
+            <div>
+                Rol: Supervisor
+            </div>
+
+        {% elif es_jefe %}
+
+            <div>
+                Rol: Jefe
+            </div>
+
+        {% endif %}
+
+
+        <div style="margin-top: 10px;">
+
+            {% if es_jefe %}
+
+                <a
+                    href="{% url 'usuarios' %}"
+                    class="btn-usuarios"
+                >
+                    Administrar usuarios
+                </a>
+
+            {% endif %}
+
+
+            <form
+                method="post"
+                action="{% url 'logout' %}"
+                style="display: inline;"
+            >
+
+                {% csrf_token %}
+
+                <button
+                    type="submit"
+                    class="btn-salir"
+                >
+                    Cerrar sesión
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<div class="contenedor">
+
+
+    <!-- ========================================================= -->
+    <!-- REGISTRAR ALERTA - SOLO OPERARIO -->
+    <!-- ========================================================= -->
+
+    {% if es_operario %}
+
+        <div class="tarjeta">
+
+            <h2>Registrar alerta</h2>
+
+            <form
+                method="post"
+                action="{% url 'crear_alerta' %}"
+                class="formulario"
+            >
+
+                {% csrf_token %}
+
+                <div class="campo">
+
+                    <label for="{{ alerta_form.maquina.id_for_label }}">
+                        Máquina
+                    </label>
+
+                    {{ alerta_form.maquina }}
+
+                </div>
+
+
+                <div
+                    class="campo"
+                    style="flex: 1;"
+                >
+
+                    <label for="{{ alerta_form.descripcion.id_for_label }}">
+                        Descripción
+                    </label>
+
+                    {{ alerta_form.descripcion }}
+
+                </div>
+
+
+                <button type="submit">
+                    Registrar alerta
+                </button>
+
+            </form>
+
+        </div>
+
+    {% endif %}
+
+
+
+    <!-- ========================================================= -->
+    <!-- ALERTAS -->
+    <!-- ========================================================= -->
+
+    <div class="tarjeta">
+
+        <h2>Alertas registradas</h2>
+
+        {% if alertas %}
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Máquina
+                        </th>
+
+                        <th>
+                            Descripción
+                        </th>
+
+                        <th>
+                            Usuario
+                        </th>
+
+                        <th>
+                            Fecha
+                        </th>
+
+                        {% if es_supervisor %}
+
+                            <th>
+                                Acción
+                            </th>
+
+                        {% endif %}
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for alerta in alertas %}
+
+                        <tr>
+
+                            <!-- MÁQUINA -->
+
+                            <td>
+
+                                {% if es_supervisor %}
+
+                                    <form
+                                        method="post"
+                                        action="{% url 'editar_alerta' alerta.id %}"
+                                        class="form-edicion"
+                                    >
+
+                                        {% csrf_token %}
+
+                                        <select
+                                            name="maquina"
+                                            required
+                                        >
+
+                                            {% for maquina in alerta_form.fields.maquina.queryset %}
+
+                                                <option
+                                                    value="{{ maquina.id }}"
+                                                    {% if maquina.id == alerta.maquina.id %}
+                                                        selected
+                                                    {% endif %}
+                                                >
+                                                    {{ maquina.nombre }}
+                                                </option>
+
+                                            {% endfor %}
+
+                                        </select>
+
+                                {% else %}
+
+                                    {{ alerta.maquina }}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- DESCRIPCIÓN -->
+
+                            <td>
+
+                                {% if es_supervisor %}
+
+                                    <input
+                                        type="text"
+                                        name="descripcion"
+                                        value="{{ alerta.descripcion }}"
+                                        required
+                                    >
+
+                                {% else %}
+
+                                    {{ alerta.descripcion }}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- USUARIO -->
+
+                            <td>
+                                {{ alerta.usuario.username }}
+                            </td>
+
+
+                            <!-- FECHA -->
+
+                            <td>
+                                {{ alerta.fecha|date:"d/m/Y H:i" }}
+                            </td>
+
+
+                            <!-- ACCIÓN -->
+
+                            {% if es_supervisor %}
+
+                                <td>
+
+                                    <button type="submit">
+                                        Guardar cambios
+                                    </button>
+
+                                    </form>
+
+                                </td>
+
+                            {% endif %}
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        {% else %}
+
+            <p class="sin-datos">
+                No hay alertas registradas.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+
+    <!-- ========================================================= -->
+    <!-- REGISTRAR PARADA - SOLO SUPERVISOR -->
+    <!-- ========================================================= -->
+
+    {% if es_supervisor %}
+
+        <div class="tarjeta">
+
+            <h2>Registrar parada</h2>
+
+            <form
+                method="post"
+                action="{% url 'crear_parada' %}"
+                class="formulario"
+            >
+
+                {% csrf_token %}
+
+
+                <div class="campo">
+
+                    <label for="{{ parada_form.maquina.id_for_label }}">
+                        Máquina
+                    </label>
+
+                    {{ parada_form.maquina }}
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label for="{{ parada_form.inicio.id_for_label }}">
+                        Inicio
+                    </label>
+
+                    {{ parada_form.inicio }}
+
+                </div>
+
+
+                <div class="campo">
+
+                    <label for="{{ parada_form.fin.id_for_label }}">
+                        Finalización
+                    </label>
+
+                    {{ parada_form.fin }}
+
+                </div>
+
+
+                <div
+                    class="campo"
+                    style="flex: 1;"
+                >
+
+                    <label for="{{ parada_form.motivo.id_for_label }}">
+                        Motivo
+                    </label>
+
+                    {{ parada_form.motivo }}
+
+                </div>
+
+
+                <button type="submit">
+                    Registrar parada
+                </button>
+
+            </form>
+
+        </div>
+
+    {% endif %}
+
+
+
+    <!-- ========================================================= -->
+    <!-- PARADAS - SUPERVISOR Y JEFE -->
+    <!-- ========================================================= -->
+
+    {% if es_supervisor or es_jefe %}
+
+        <div class="tarjeta">
+
+            <h2>Paradas registradas</h2>
+
+            {% if paradas %}
+
+                <table>
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Máquina
+                            </th>
+
+                            <th>
+                                Inicio
+                            </th>
+
+                            <th>
+                                Fin
+                            </th>
+
+                            <th>
+                                Duración
+                            </th>
+
+                            <th>
+                                Motivo
+                            </th>
+
+                            <th>
+                                Registrada por
+                            </th>
+
+                            <th>
+                                Estado
+                            </th>
+
+                            {% if es_jefe %}
+
+                                <th>
+                                    Acción
+                                </th>
+
+                            {% endif %}
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        {% for parada in paradas %}
+
+                            <tr>
+
+                                <td>
+                                    {{ parada.maquina }}
+                                </td>
+
+
+                                <td>
+                                    {{ parada.inicio|date:"d/m/Y H:i" }}
+                                </td>
+
+
+                                <td>
+                                    {{ parada.fin|date:"d/m/Y H:i" }}
+                                </td>
+
+
+                                <td>
+                                    {{ parada.duracion_minutos }}
+                                    minutos
+                                </td>
+
+
+                                <td>
+                                    {{ parada.motivo }}
+                                </td>
+
+
+                                <td>
+                                    {{ parada.usuario.username }}
+                                </td>
+
+
+                                <!-- ESTADO -->
+
+                                <td>
+
+                                    {% if parada.cancelada %}
+
+                                        <span class="estado-cancelada">
+                                            Cancelada
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="estado-activa">
+                                            Activa
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- CANCELACIÓN - SOLO JEFE -->
+
+                                {% if es_jefe %}
+
+                                    <td>
+
+                                        {% if not parada.cancelada %}
+
+                                            <form
+                                                method="post"
+                                                action="{% url 'cancelar_parada' parada.id %}"
+                                            >
+
+                                                {% csrf_token %}
+
+                                                <textarea
+                                                    name="motivo_cancelacion"
+                                                    rows="2"
+                                                    placeholder="Motivo de cancelación"
+                                                    required
+                                                ></textarea>
+
+                                                <br>
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn-cancelar"
+                                                >
+                                                    Cancelar parada
+                                                </button>
+
+                                            </form>
+
+                                        {% else %}
+
+                                            <div class="info-cancelacion">
+
+                                                <strong>
+                                                    Cancelada por:
+                                                </strong>
+
+                                                {{ parada.cancelada_por.username }}
+
+                                                <br>
+
+
+                                                <strong>
+                                                    Fecha:
+                                                </strong>
+
+                                                {{ parada.fecha_cancelacion|date:"d/m/Y H:i" }}
+
+                                                <br>
+
+
+                                                <strong>
+                                                    Motivo:
+                                                </strong>
+
+                                                {{ parada.motivo_cancelacion }}
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                {% endif %}
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            {% else %}
+
+                <p class="sin-datos">
+                    No hay paradas registradas.
+                </p>
+
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>
